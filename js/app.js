@@ -41,7 +41,7 @@ async function detectAR() {
   if (supportsWebXR) {
     deviceNote.innerHTML = '모델을 고르고 <b>AR로 보기</b>를 누른 뒤, 책상을 비추고 화면을 눌러 모델을 놓으세요.';
   } else if (supportsQuickLook || isIOS) {
-    deviceNote.innerHTML = '모델을 고르고 <b>AR로 보기</b>를 누르면 아이폰 AR 뷰어가 열려요. 애니메이션은 자동으로 반복 재생됩니다.';
+    deviceNote.innerHTML = '모델을 고르고 <b>AR로 보기</b>를 누르면 아이폰 AR 뷰어가 열려요. 아래에서 고른 동작이 자동으로 반복 재생됩니다.';
   } else {
     deviceNote.innerHTML = '이 기기/브라우저는 AR을 지원하지 않아 <b>3D 미리보기</b>만 가능해요. 안드로이드는 Chrome, 아이폰은 Safari로 열어 주세요.';
   }
@@ -299,8 +299,15 @@ arBtn.addEventListener('click', () => {
 // ----- 아이폰: AR 뷰어(Quick Look) -----
 function openQuickLook() {
   const cfg = MODELS[selectedIndex];
-  if (!cfg.usdz) { toast('이 모델은 아이폰용 USDZ 파일이 없어요.'); return; }
-  quickLook.setAttribute('href', MODEL_DIR + cfg.usdz);
+  let file = cfg.usdz;
+  if (file && typeof file === 'object') {
+    // 동작별 USDZ: 화면에서 고른 동작 이름의 파일을 엶 (없으면 첫 번째)
+    const clipName = current && current.clips.length
+      ? current.clips[Number(clipSelects[0].value) || 0].name : cfg.clip;
+    file = file[clipName] || Object.values(file)[0];
+  }
+  if (!file) { toast('이 모델은 아이폰용 USDZ 파일이 없어요.'); return; }
+  quickLook.setAttribute('href', MODEL_DIR + file);
   quickLook.click();
 }
 
