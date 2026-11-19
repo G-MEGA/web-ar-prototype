@@ -17,6 +17,7 @@
 //  walkClip  : (선택) 탭한 곳으로 걸어갈 때 쓸 애니메이션 이름
 //  idleClip  : (선택) 도착한 뒤 돌아올 애니메이션 이름
 //  walkSpeed : (선택) 걷는 속도(초당 미터). 0.15 = 1초에 15cm
+//  fireClip  : (선택) 안드로이드 AR 화면의 '사격' 버튼으로 한 번 재생할 애니메이션 이름
 // ================================================================
 
 export const MODELS = [
@@ -32,5 +33,6 @@ export const MODELS = [
     walkClip: 'Walk',
     idleClip: 'Idle',
     walkSpeed: 0.15,
+    fireClip: 'Fire',
   },
 ];

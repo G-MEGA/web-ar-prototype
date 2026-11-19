@@ -20,8 +20,10 @@ const deviceNote = $('device-note');
 const quickLook = $('quicklook');
 const toastEl = $('toast');
 // 미리보기 화면과 AR 화면에 같은 조작 UI가 하나씩 있음
-const playBtns = [$('play-btn'), $('xr-play-btn')];
-const clipSelects = [$('clip-select'), $('xr-clip-select')];
+// (AR 화면에는 동작 선택 대신 사격 버튼만 있음)
+const playBtns = [$('play-btn')];
+const clipSelects = [$('clip-select')];
+const fireBtn = $('fire-btn');
 const chipBoxes = [$('model-chips'), $('xr-model-chips')];
 
 // ---------------------------------------------------------------
@@ -212,6 +214,14 @@ async function showModel(i) {
 
   const clips = gltf.animations || [];
   current = { root, mixer: clips.length ? new THREE.AnimationMixer(model) : null, clips, action: null, playing: false };
+  // 한 번만 재생하는 동작(사격)이 끝나면 대기 동작으로 돌아감
+  if (current.mixer) {
+    const me = current;
+    me.mixer.addEventListener('finished', (e) => {
+      if (current !== me || e.action !== me.action) return;
+      playClipByName(cfg.idleClip || cfg.clip);
+    });
+  }
 
   // 애니메이션 목록 채우기
   let defaultClip = Math.max(0, clips.findIndex((c) => c.name === cfg.clip));
@@ -279,8 +289,10 @@ function playClipByName(name) {
   setPlayUI();
 }
 
-function playClip(k) {
+function playClip(k, { once = false } = {}) {
   const next = current.mixer.clipAction(current.clips[k]);
+  next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+  next.clampWhenFinished = once;
   next.reset();
   next.paused = false;
   next.play();
@@ -298,6 +310,26 @@ function setPlayUI({ loading = false } = {}) {
     else btn.textContent = current.playing ? '⏸ 일시정지' : '▶ 애니메이션 재생';
   });
   clipSelects.forEach((sel) => sel.classList.toggle('hidden', loading || !(has && current.clips.length > 1)));
+  const canFire = has && clipIndex(MODELS[selectedIndex].fireClip) >= 0;
+  fireBtn.classList.toggle('hidden', !loading && !canFire);
+  fireBtn.disabled = loading || !canFire || !placed;
+}
+
+// ---------------------------------------------------------------
+// 사격 (안드로이드 AR 화면)
+// 걷는 중에 누르면 그 자리에 멈춰서 쏨. 쏘는 중에 또 누르면 처음부터 다시 쏨.
+// 다 쏘면 대기 동작으로 돌아감. 쏘는 중에 책상을 누르면 걸어가기로 바뀜.
+// ---------------------------------------------------------------
+fireBtn.addEventListener('click', fire);
+function fire() {
+  if (!current || !current.mixer) return;
+  const k = clipIndex(MODELS[selectedIndex].fireClip);
+  if (k < 0) return;
+  walkTarget = null;
+  tapMarker.visible = false;
+  clipSelects.forEach((sel) => { sel.value = String(k); });
+  playClip(k, { once: true });
+  setPlayUI();
 }
 
 // ---------------------------------------------------------------
@@ -354,6 +386,9 @@ async function startWebXR() {
   homeEl.classList.add('hidden');
   overlayEl.classList.remove('hidden');
   setStatus('책상을 천천히 비춰 주세요');
+  // AR 화면에는 동작 선택이 없으므로 대기 동작으로 시작
+  if (current) playClipByName(MODELS[selectedIndex].idleClip || MODELS[selectedIndex].clip);
+  setPlayUI();
 
   const viewerSpace = await session.requestReferenceSpace('viewer');
   hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
@@ -412,6 +447,7 @@ replaceBtn.addEventListener('click', () => {
   walkTarget = null;
   if (current) playClipByName(MODELS[selectedIndex].idleClip || MODELS[selectedIndex].clip);
   replaceBtn.classList.add('hidden');
+  setPlayUI();
   setStatus('책상을 비추고 화면을 눌러 모델을 놓으세요', true);
 });
 
@@ -428,6 +464,7 @@ function placeModel() {
   holder.visible = true;
   placed = true;
   replaceBtn.classList.remove('hidden');
+  setPlayUI();
   setStatus('책상의 다른 곳을 누르면 그곳으로 걸어가요', true);
 }
 
