@@ -36,8 +36,9 @@
 3. 두 손가락으로 크기/회전, 한 손가락으로 위치를 바꿀 수 있습니다.
 4. 다른 모델을 보려면 AR 뷰어를 닫고(✕) 웹 화면에서 다시 고릅니다.
 
-> 아이폰 AR 뷰어는 **애니메이션을 하나만** 재생합니다. 로봇은 `Dance`, 미셸은 `SambaDance`,
-> X봇은 `agree` 동작이 들어 있습니다. (바꾸는 법은 아래 3번)
+> 아이폰 AR 뷰어는 USDZ 파일 하나에 **애니메이션을 하나만** 재생합니다.
+> 그래서 안드로이드 모델은 동작별로 `Android_Idle.usdz`, `Android_Walk.usdz` 두 파일을 두었고,
+> 웹 화면에서 동작(Idle/Walk)을 고른 뒤 **AR로 보기**를 누르면 그 동작이 반복 재생됩니다.
 
 ### 잘 인식되게 하는 팁
 - 밝은 곳에서, 무늬나 물건이 조금 있는 책상이 잘 인식됩니다. 완전히 하얗거나 반짝이는 면은 인식이 약합니다.
@@ -96,7 +97,12 @@ Animation 체크, 모델 크기는 미터 기준(20cm짜리면 0.2)으로 맞춰
 },
 ```
 
-샘플 모델이 필요 없으면 해당 블록과 `assets/models/` 의 파일을 지우면 됩니다.
+동작이 여러 개라면 아이폰용 USDZ를 동작마다 하나씩 만들고 이렇게 적으면,
+웹 화면에서 고른 동작의 USDZ가 열립니다.
+
+```js
+usdz: { Idle: 'MyModel_Idle.usdz', Walk: 'MyModel_Walk.usdz' },
+```
 GitHub에 올리면(커밋) 1~2분 뒤 같은 링크에 반영됩니다.
 
 > 팁: 블렌더에서 **뼈(Bone)에 직접 붙인 메시**는 USDZ로 내보낼 때 움직임이 사라질 수 있습니다.
@@ -138,13 +144,8 @@ Branch를 **main** / **/(root)** 로 고르고 **Save**. 1~2분 뒤 사이트 �
 
 ---
 
-## 샘플 모델 출처와 라이선스
+## 모델 출처
 
-샘플 모델은 three.js 공식 예제 저장소(`examples/models/gltf/`)에서 가져온 테스트용입니다.
-
-| 파일 | 출처 | 라이선스 |
-|---|---|---|
-| RobotExpressive | Tomás Laulhé ([Quaternius](https://quaternius.com)), 수정 Don McCurdy, three.js 예제 | CC0 |
-| Michelle, Xbot | [Mixamo](https://www.mixamo.com) 캐릭터/애니메이션, three.js 예제 | Mixamo 이용 약관 (테스트 용도) |
+`Android.glb` (+ 동작별 USDZ): 직접 제작한 블렌더 모델. 아이폰용 USDZ는 GLB에서 `tools/glb_to_usdz.py`로 키 25cm에 맞춰 변환했습니다.
 
 라이브러리: three.js (MIT, `vendor/three/LICENSE`).

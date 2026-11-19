@@ -4,6 +4,9 @@
 //  glb       : assets/models/ 안의 GLB 파일 (안드로이드 AR, 미리보기용)
 //  usdz      : assets/models/ 안의 USDZ 파일 (아이폰 AR 뷰어용)
 //              tools/glb_to_usdz.py 로 GLB에서 만들 수 있습니다. (README 참고)
+//              아이폰 AR 뷰어는 USDZ 하나에 애니메이션 하나만 재생하므로,
+//              동작마다 USDZ를 따로 만들어 { 동작이름: 파일 } 형태로 적어 주면
+//              화면에서 고른 동작의 USDZ가 열립니다.
 //  name      : 화면에 보일 이름
 //  emoji     : 화면에 보일 아이콘 (아무 이모지나 가능)
 //  height    : 실제 AR 공간에서의 키(미터). 0.2 = 20cm
@@ -15,33 +18,13 @@
 
 export const MODELS = [
   {
-    glb: 'RobotExpressive.glb',
-    usdz: 'RobotExpressive.usdz',
-    name: '로봇',
+    glb: 'Android.glb',
+    usdz: { Idle: 'Android_Idle.usdz', Walk: 'Android_Walk.usdz' },
+    name: '안드로이드',
     emoji: '🤖',
-    height: 0.2,
-    rotationY: 0,
-    clip: 'Dance',
-    autoPlay: false,
-  },
-  {
-    glb: 'Michelle.glb',
-    usdz: 'Michelle.usdz',
-    name: '미셸',
-    emoji: '💃',
     height: 0.25,
     rotationY: 0,
-    clip: 'SambaDance',
-    autoPlay: false,
-  },
-  {
-    glb: 'Xbot.glb',
-    usdz: 'Xbot.usdz',
-    name: 'X봇',
-    emoji: '🦾',
-    height: 0.25,
-    rotationY: 0,
-    clip: 'agree',
-    autoPlay: false,
+    clip: 'Idle',
+    autoPlay: true,
   },
 ];
