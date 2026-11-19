@@ -14,6 +14,7 @@ const homeEl = $('home');
 const overlayEl = $('xr-overlay');
 const arBtn = $('ar-btn');
 const exitBtn = $('exit-btn');
+const replaceBtn = $('replace-btn');
 const statusEl = $('status');
 const deviceNote = $('device-note');
 const quickLook = $('quicklook');
@@ -39,11 +40,11 @@ async function detectAR() {
     try { supportsWebXR = await navigator.xr.isSessionSupported('immersive-ar'); } catch (e) { supportsWebXR = false; }
   }
   if (supportsWebXR) {
-    deviceNote.innerHTML = '모델을 고르고 <b>AR로 보기</b>를 누른 뒤, 책상을 비추고 화면을 눌러 모델을 놓으세요.';
+    deviceNote.innerHTML = '모델을 고르고 <b>AR로 보기</b>를 누른 뒤, 책상을 비추고 화면을 눌러 모델을 놓으세요. 놓은 뒤 책상의 다른 곳을 누르면 그곳으로 걸어가요.';
   } else if (supportsQuickLook || isIOS) {
     deviceNote.innerHTML = '모델을 고르고 <b>AR로 보기</b>를 누르면 아이폰 AR 뷰어가 열려요. 아래에서 고른 동작이 자동으로 반복 재생됩니다.';
   } else {
-    deviceNote.innerHTML = '이 기기/브라우저는 AR을 지원하지 않아 <b>3D 미리보기</b>만 가능해요. 안드로이드는 Chrome, 아이폰은 Safari로 열어 주세요.';
+    deviceNote.innerHTML = '받침 위를 누르면 모델이 그곳으로 걸어가요. 이 기기/브라우저는 AR을 지원하지 않아 <b>3D 미리보기</b>만 가능해요. 안드로이드는 Chrome, 아이폰은 Safari로 열어 주세요.';
   }
 }
 detectAR();
@@ -172,6 +173,7 @@ async function showModel(i) {
   const token = ++loadToken;
   const cfg = MODELS[i];
 
+  walkTarget = null;
   if (current) {
     holder.remove(current.root);
     if (current.mixer) current.mixer.stopAllAction();
@@ -266,6 +268,17 @@ clipSelects.forEach((sel) => sel.addEventListener('change', () => {
   setPlayUI();
 }));
 
+function clipIndex(name) {
+  return current ? current.clips.findIndex((c) => c.name === name) : -1;
+}
+function playClipByName(name) {
+  const k = clipIndex(name);
+  if (k < 0 || !current.mixer) return;
+  clipSelects.forEach((sel) => { sel.value = String(k); });
+  if (!(current.playing && current.action && current.action.getClip() === current.clips[k])) playClip(k);
+  setPlayUI();
+}
+
 function playClip(k) {
   const next = current.mixer.clipAction(current.clips[k]);
   next.reset();
@@ -345,8 +358,8 @@ async function startWebXR() {
   const viewerSpace = await session.requestReferenceSpace('viewer');
   hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
 
-  // 화면을 누르면(select) 링 위치에 모델 놓기
-  session.addEventListener('select', placeModel);
+  // 화면을 누르면(select): 처음엔 링 위치에 모델 놓기, 놓은 뒤엔 누른 곳으로 걸어가기
+  session.addEventListener('select', onXRSelect);
   session.addEventListener('end', onXREnd);
 }
 
@@ -365,8 +378,46 @@ const _quat = new THREE.Quaternion();
 const _scale = new THREE.Vector3();
 const _camPos = new THREE.Vector3();
 
+function onXRSelect(e) {
+  if (!placed) { placeModel(); return; }
+  const p = tapPointOnDesk(e);
+  if (p) walkTo(p);
+}
+
+// 누른 손가락 방향의 광선이 모델이 서 있는 책상 높이(수평면)와 만나는 점
+const _rayO = new THREE.Vector3();
+const _rayD = new THREE.Vector3();
+function tapPointOnDesk(e) {
+  const refSpace = renderer.xr.getReferenceSpace();
+  const pose = e.frame && e.frame.getPose(e.inputSource.targetRaySpace, refSpace);
+  if (pose) {
+    const m = new THREE.Matrix4().fromArray(pose.transform.matrix);
+    _rayO.setFromMatrixPosition(m);
+    _rayD.set(0, 0, -1).transformDirection(m);
+    if (_rayD.y < -1e-3) {
+      const t = (holder.position.y - _rayO.y) / _rayD.y;
+      if (t > 0 && t < 5) return _rayO.clone().addScaledVector(_rayD, t);
+    }
+  }
+  // 광선 계산이 안 되면 화면 가운데 링 위치 사용
+  if (reticle.visible) {
+    reticle.matrix.decompose(_pos, _quat, _scale);
+    return new THREE.Vector3(_pos.x, holder.position.y, _pos.z);
+  }
+  return null;
+}
+
+replaceBtn.addEventListener('click', () => {
+  placed = false;
+  walkTarget = null;
+  if (current) playClipByName(MODELS[selectedIndex].idleClip || MODELS[selectedIndex].clip);
+  replaceBtn.classList.add('hidden');
+  setStatus('책상을 비추고 화면을 눌러 모델을 놓으세요', true);
+});
+
 function placeModel() {
   if (!reticle.visible) return;
+  walkTarget = null;
   reticle.matrix.decompose(_pos, _quat, _scale);
   holder.position.copy(_pos);
   // 모델이 휴대폰(사용자) 쪽을 바라보도록 회전
@@ -376,11 +427,15 @@ function placeModel() {
   moveSunTo(holder.position);
   holder.visible = true;
   placed = true;
-  setStatus('다른 곳을 누르면 모델이 옮겨져요', true);
+  replaceBtn.classList.remove('hidden');
+  setStatus('책상의 다른 곳을 누르면 그곳으로 걸어가요', true);
 }
 
 function onXREnd() {
   hitTestSource = null;
+  walkTarget = null;
+  tapMarker.visible = false;
+  replaceBtn.classList.add('hidden');
   reticle.visible = false;
   scene.background = PREVIEW_BG;
   previewDisc.visible = true;
@@ -402,12 +457,78 @@ function setStatus(text, ok = false) {
 }
 
 // ---------------------------------------------------------------
+// 탭한 곳으로 걸어가기
+// ---------------------------------------------------------------
+let walkTarget = null;
+// 목적지 표시용 작은 링
+const tapMarker = new THREE.Mesh(
+  new THREE.RingGeometry(0.012, 0.02, 32).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x4f8cff, transparent: true, opacity: 0.9, depthTest: false }),
+);
+tapMarker.visible = false;
+scene.add(tapMarker);
+
+function walkTo(p) {
+  const cfg = MODELS[selectedIndex];
+  if (!current) return;
+  walkTarget = p.clone();
+  walkTarget.y = holder.position.y;
+  tapMarker.position.copy(walkTarget).y += 0.002;
+  tapMarker.visible = true;
+  if (cfg.walkClip) playClipByName(cfg.walkClip);
+}
+
+const TURN_SPEED = 6;   // 초당 회전 속도(라디안)
+function updateWalk(dt) {
+  if (!walkTarget) return;
+  const cfg = MODELS[selectedIndex];
+  const speed = cfg.walkSpeed || (cfg.height || 0.2) * 0.6;
+  const dx = walkTarget.x - holder.position.x;
+  const dz = walkTarget.z - holder.position.z;
+  const dist = Math.hypot(dx, dz);
+  if (dist < 0.005) {
+    walkTarget = null;
+    tapMarker.visible = false;
+    playClipByName(cfg.idleClip || cfg.clip);
+    return;
+  }
+  // 목적지 쪽으로 돌기 (가장 짧은 방향으로)
+  const want = Math.atan2(dx, dz);
+  let diff = want - holder.rotation.y;
+  diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+  const turn = Math.sign(diff) * Math.min(Math.abs(diff), TURN_SPEED * dt);
+  holder.rotation.y += turn;
+  // 많이 돌아야 할 때는 거의 제자리에서 돌고, 방향이 맞으면 앞으로
+  const forward = Math.max(0, Math.cos(diff));
+  const step = Math.min(dist, speed * dt * forward);
+  holder.position.x += (dx / dist) * step;
+  holder.position.z += (dz / dist) * step;
+  moveSunTo(holder.position);
+}
+
+// PC/휴대폰 미리보기: 받침 위를 누르면(끌지 않고 짧게) 그곳으로 걸어가기
+const raycaster = new THREE.Raycaster();
+let downAt = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (renderer.xr.isPresenting || !downAt) return;
+  const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+  downAt = null;
+  if (moved > 6) return;   // 화면을 끌어서 돌린 경우는 무시
+  const ndc = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObject(previewDisc)[0];
+  if (hit) walkTo(hit.point);
+});
+
+// ---------------------------------------------------------------
 // 매 프레임
 // ---------------------------------------------------------------
 const clock = new THREE.Clock();
 renderer.setAnimationLoop((time, frame) => {
   const dt = Math.min(clock.getDelta(), 0.1);
   if (current && current.mixer) current.mixer.update(dt);
+  updateWalk(dt);
 
   if (frame && hitTestSource) {
     const refSpace = renderer.xr.getReferenceSpace();
@@ -416,6 +537,8 @@ renderer.setAnimationLoop((time, frame) => {
       const pose = hits[0].getPose(refSpace);
       reticle.matrix.fromArray(pose.transform.matrix);
       reticle.visible = true;
+      // 모델을 놓은 뒤에는 링 대신 목적지 표시만 보이게
+      reticle.material.opacity = placed ? 0 : 0.9;
       if (!placed) setStatus('책상을 찾았어요. 화면을 눌러 모델을 놓으세요', true);
     } else {
       reticle.visible = false;

@@ -14,6 +14,9 @@
 //  rotationY : 모델이 바라보는 방향(도 단위). 뒤돌아 있으면 180
 //  clip      : 처음에 선택돼 있을 애니메이션 이름 (없으면 첫 번째)
 //  autoPlay  : 화면에 나타나자마자 애니메이션을 재생할지 여부
+//  walkClip  : (선택) 탭한 곳으로 걸어갈 때 쓸 애니메이션 이름
+//  idleClip  : (선택) 도착한 뒤 돌아올 애니메이션 이름
+//  walkSpeed : (선택) 걷는 속도(초당 미터). 0.15 = 1초에 15cm
 // ================================================================
 
 export const MODELS = [
@@ -26,5 +29,8 @@ export const MODELS = [
     rotationY: 0,
     clip: 'Idle',
     autoPlay: true,
+    walkClip: 'Walk',
+    idleClip: 'Idle',
+    walkSpeed: 0.15,
   },
 ];
