@@ -9,84 +9,63 @@
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
-  margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   overscroll-behavior: none;
 }
 .hidden { display: none !important; }
 
-/* ---------- 시작 화면 ---------- */
-#home {
-  min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; gap: 20px; max-width: 560px; margin: 0 auto;
+/* ---------- 3D 미리보기 ---------- */
+#viewer { position: fixed; inset: 0; }
+#viewer canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+/* ---------- 미리보기 화면 UI ---------- */
+#home { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+#home > * { pointer-events: auto; }
+.home-head {
+  padding: max(20px, env(safe-area-inset-top)) 16px 12px;
+  background: linear-gradient(var(--bg) 40%, transparent);
 }
-.home-head h1 { margin: 8px 0 8px; font-size: 26px; }
-.home-head p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 15px; }
-.model-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.model-card {
-  background: var(--card); border: 2px solid var(--line); border-radius: 16px;
-  padding: 20px 12px; text-align: center; color: var(--text); font: inherit; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+.home-head h1 { margin: 0 0 6px; font-size: 22px; }
+.home-head p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
+.home-bottom, .ar-bottom {
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 12px;
 }
-.model-card .emoji { font-size: 44px; line-height: 1; }
-.model-card .name { font-size: 16px; font-weight: 600; }
-.model-card[aria-selected="true"] { border-color: var(--accent); background: #1d2a44; }
-.home-foot { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: auto; }
-.link { color: var(--accent-2); font-size: 14px; }
+.home-bottom { background: linear-gradient(transparent, var(--bg) 35%); max-width: 640px; width: 100%; margin: 0 auto; }
 
 /* ---------- 버튼 ---------- */
 .btn {
   border: 0; border-radius: 999px; padding: 12px 18px; font: inherit; font-size: 15px; font-weight: 600;
-  background: rgba(30, 33, 41, .85); color: var(--text); cursor: pointer;
+  background: rgba(30, 33, 41, .88); color: var(--text); cursor: pointer;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 .btn.primary { background: var(--accent); }
 .btn.big { width: 100%; padding: 16px; font-size: 17px; }
-.btn.round { width: 44px; height: 44px; padding: 0; font-size: 18px; }
+.btn.round { width: 44px; height: 44px; padding: 0; font-size: 18px; flex: 0 0 auto; }
 .btn:disabled { opacity: .45; }
 .select {
   border: 0; border-radius: 999px; padding: 12px 14px; font: inherit; font-size: 15px;
-  background: rgba(30, 33, 41, .85); color: var(--text); max-width: 50%;
-}
-
-/* ---------- AR 화면 ---------- */
-#ar { position: fixed; inset: 0; background: #000; }
-#ar-container { position: absolute; inset: 0; overflow: hidden; }
-.ar-top {
-  position: absolute; left: 0; right: 0; top: 0; z-index: 10;
-  padding: max(12px, env(safe-area-inset-top)) 16px 12px; display: flex; align-items: center; gap: 10px;
-}
-.status {
-  background: rgba(0, 0, 0, .55); padding: 8px 14px; border-radius: 999px; font-size: 14px;
-}
-.status.found { background: rgba(22, 163, 74, .8); }
-.scan-hint {
-  position: absolute; inset: 0; z-index: 5; pointer-events: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-}
-.scan-frame {
-  width: min(60vw, 60vh); aspect-ratio: 1; border: 3px dashed rgba(255, 255, 255, .8); border-radius: 20px;
-  animation: pulse 1.6s ease-in-out infinite;
-}
-.scan-hint p { margin: 0; background: rgba(0, 0, 0, .55); padding: 8px 14px; border-radius: 999px; font-size: 14px; }
-@keyframes pulse { 50% { transform: scale(.94); opacity: .6; } }
-
-.ar-bottom {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 10;
-  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; gap: 12px;
+  background: rgba(30, 33, 41, .88); color: var(--text); max-width: 50%;
 }
 .anim-row { display: flex; gap: 8px; justify-content: center; }
-.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; justify-content: safe center; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
-  flex: 0 0 auto; border: 2px solid transparent; border-radius: 999px; padding: 8px 14px;
-  background: rgba(30, 33, 41, .85); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
+  flex: 0 0 auto; border: 2px solid transparent; border-radius: 999px; padding: 9px 16px;
+  background: rgba(30, 33, 41, .88); color: var(--text); font: inherit; font-size: 15px; cursor: pointer;
 }
-.chip[aria-pressed="true"] { border-color: var(--accent-2); background: rgba(29, 42, 68, .9); }
+.chip[aria-selected="true"] { border-color: var(--accent-2); background: rgba(29, 42, 68, .95); }
+
+/* ---------- AR 화면 UI (dom-overlay) ---------- */
+#xr-overlay { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+#xr-overlay .ar-top, #xr-overlay .ar-bottom { pointer-events: auto; }
+.ar-top { padding: max(12px, env(safe-area-inset-top)) 16px 12px; display: flex; align-items: center; gap: 10px; }
+.status { background: rgba(0, 0, 0, .6); padding: 8px 14px; border-radius: 999px; font-size: 14px; line-height: 1.4; }
+.status.ok { background: rgba(22, 163, 74, .85); }
 
 .toast {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 100;
-  background: rgba(0, 0, 0, .85); color: #fff; padding: 16px 20px; border-radius: 14px;
-  max-width: calc(100vw - 32px); line-height: 1.5; font-size: 15px; text-align: center;
+  background: rgba(0, 0, 0, .88); color: #fff; padding: 16px 20px; border-radius: 14px;
+  width: max-content; max-width: calc(100vw - 32px); line-height: 1.55; font-size: 15px; text-align: center;
 }
