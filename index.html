@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#111318">
+  <title>Web AR 프로토타입</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 1) 시작 화면: 모델 선택 -->
+  <section id="home" class="screen">
+    <header class="home-head">
+      <h1>Web AR 프로토타입</h1>
+      <p>보고 싶은 모델을 고른 뒤 <b>AR 시작</b>을 누르고,<br>인쇄한 마커를 카메라로 비춰 주세요.</p>
+    </header>
+    <div id="model-grid" class="model-grid" role="listbox" aria-label="모델 선택"></div>
+    <div class="home-foot">
+      <button id="start-btn" class="btn primary big">AR 시작</button>
+      <a class="link" href="assets/targets/marker-A4.pdf" target="_blank">마커 인쇄용 PDF 열기</a>
+      <a class="link" href="assets/targets/marker.png" target="_blank">마커 이미지(PNG) 열기</a>
+    </div>
+  </section>
+
+  <!-- 2) AR 화면: 카메라 + 3D + 웹 UI -->
+  <section id="ar" class="screen hidden">
+    <div id="ar-container"></div>
+
+    <div class="ar-top">
+      <button id="back-btn" class="btn round" aria-label="나가기">✕</button>
+      <div id="status" class="status">카메라 준비 중…</div>
+    </div>
+
+    <div id="scan-hint" class="scan-hint">
+      <div class="scan-frame"></div>
+      <p>마커를 화면 안에 비춰 주세요</p>
+    </div>
+
+    <div class="ar-bottom">
+      <div class="anim-row">
+        <button id="play-btn" class="btn primary" disabled>▶ 애니메이션 재생</button>
+        <select id="clip-select" class="select hidden" aria-label="애니메이션 선택"></select>
+      </div>
+      <div id="model-chips" class="chips"></div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
