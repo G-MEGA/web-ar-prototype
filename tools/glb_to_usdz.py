@@ -31,8 +31,11 @@ if helper:
 
 # 뼈에 직접 붙은(bone parent) 메시는 USD로 내보낼 때 움직임이 사라지므로
 # "뼈 하나에 100% 가중치로 스킨된 메시"로 바꿔 줍니다. (보이는 모습은 같음)
+# (자식 오브젝트가 달린 메시는 바꾸면 자식이 따라오지 않으므로 그대로 둡니다.
+#  이 경우 블렌더가 뼈 움직임을 오브젝트 움직임으로 구워서 내보냅니다.)
 bone_children = [ob for ob in scene.objects
-                 if ob.type == 'MESH' and ob.parent and ob.parent.type == 'ARMATURE' and ob.parent_type == 'BONE']
+                 if ob.type == 'MESH' and ob.parent and ob.parent.type == 'ARMATURE' and ob.parent_type == 'BONE'
+                 and not ob.children]
 arms = {ob.parent for ob in bone_children}
 for arm in arms:
     arm.data.pose_position = 'REST'   # 기본 자세에서 변환해야 위치가 맞음
@@ -66,10 +69,19 @@ if actions:
         # glTF 가져오기가 만든 NLA 트랙을 끄고, 고른 애니메이션만 활성화
         for tr in list(ad.nla_tracks):
             ad.nla_tracks.remove(tr)
-        if ob.type == 'ARMATURE':
+        # 이 오브젝트용 슬롯이 고른 애니메이션 안에 있으면 연결
+        # (뼈대뿐 아니라 총구 불꽃처럼 오브젝트 자체가 움직이는 경우도 포함)
+        slot = None
+        if hasattr(action, 'slots'):
+            slot = next((sl for sl in action.slots if sl.identifier == 'OB' + ob.name), None)
+            if slot is None and ob.type == 'ARMATURE' and len(action.slots) == 1:
+                slot = action.slots[0]
+        if slot is not None or (ob.type == 'ARMATURE' and not hasattr(action, 'slots')):
             ad.action = action
-            if hasattr(ad, 'action_slot') and action.slots:
-                ad.action_slot = action.slots[0]
+            if slot is not None:
+                ad.action_slot = slot
+        else:
+            ad.action = None
     f0, f1 = action.frame_range
     scene.frame_start, scene.frame_end = int(f0), int(f1)
     scene.frame_set(int(f0))

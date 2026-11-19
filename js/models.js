@@ -22,7 +22,7 @@
 export const MODELS = [
   {
     glb: 'Android.glb',
-    usdz: { Idle: 'Android_Idle.usdz', Walk: 'Android_Walk.usdz' },
+    usdz: { Idle: 'Android_Idle.usdz', Walk: 'Android_Walk.usdz', Fire: 'Android_Fire.usdz' },
     name: '안드로이드',
     emoji: '🤖',
     height: 0.25,
